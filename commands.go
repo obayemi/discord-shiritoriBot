@@ -96,6 +96,13 @@ func help(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 
 func resetShiritori(s *discordgo.Session, m *discordgo.MessageCreate) {
+    if m.Author.ID != "132550685639049216" {
+        s.ChannelMessageSend(
+            m.ChannelID,
+            "you have no power here!",
+        )
+        return
+    }
     var words []Word
     Db.Where(&Word{ChannelID: m.ChannelID}).Find(&words)
 
@@ -106,14 +113,13 @@ func resetShiritori(s *discordgo.Session, m *discordgo.MessageCreate) {
 
     s.ChannelMessageSend(
         m.ChannelID,
-        "words DB emptied",
+        fmt.Sprintf("words DB for <#%s> emptied", m.ChannelID),
     )
     return
 }
 
 
 func cleanShiritori(s *discordgo.Session, m *discordgo.MessageCreate) {
-
     var channel Channel
     if err := Db.Where(&channel, ).Error; err != nil {
         s.ChannelMessageSend(
@@ -122,7 +128,7 @@ func cleanShiritori(s *discordgo.Session, m *discordgo.MessageCreate) {
         )
         return
     } else {
-        if false {
+        if m.Author.ID != "132550685639049216" && false {
             sessions, err := s.ChannelMessages(m.ChannelID, 100, m.ID, "", "")
             if err != nil {
                 s.ChannelMessageSend(
@@ -134,7 +140,9 @@ func cleanShiritori(s *discordgo.Session, m *discordgo.MessageCreate) {
                     ids[i] = s.ID
                 }
 
-                s.ChannelMessagesBulkDelete(m.ChannelID, ids)
+                if err := s.ChannelMessagesBulkDelete(m.ChannelID, ids); err != nil {
+                    fmt.Println(err)
+                }
             }
         } else if greatContent, err := os.Open("./fuck.gif"); err != nil {
             s.ChannelMessageSend(m.ChannelID, "not implemented")
@@ -148,6 +156,15 @@ func cleanShiritori(s *discordgo.Session, m *discordgo.MessageCreate) {
 func playShiritori(s *discordgo.Session, m *discordgo.MessageCreate) {
     var channel Channel
     if err := Db.Find(&channel, &Channel{ChannelID: m.ChannelID}).Error; err != nil {
+        return
+    }
+
+    if strings.ContainsAny(m.Content, " *_,!?.:;()#@l\"'") {
+        s.ChannelMessageDelete(channel.ChannelID, m.ID)
+        s.ChannelMessageSend(
+            m.ChannelID,
+            fmt.Sprintf("only one word allowed in shiritori sessions %s", m.Author.Mention()),
+        )
         return
     }
 
